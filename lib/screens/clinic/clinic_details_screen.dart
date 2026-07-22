@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_map/flutter_map.dart';
+import 'package:latlong2/latlong.dart';
 import '../../core/theme/app_colors.dart';
 
 class ClinicDetailsScreen extends StatelessWidget {
@@ -8,6 +10,8 @@ class ClinicDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final LatLng clinicLocation = clinic['location'] ?? const LatLng(40.7350, -73.9400);
+
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -167,10 +171,65 @@ class ClinicDetailsScreen extends StatelessWidget {
                   const SizedBox(height: 8),
                   Text(
                     '${clinic['name']} offers premier medical services with a focus on patient-centered care. Our facility is equipped with state-of-the-art diagnostic tools and a team of specialists dedicated to providing comprehensive healthcare for all ages.',
-                    style: TextStyle(
+                    style: const TextStyle(
                       fontSize: 14,
                       color: AppColors.onSurfaceVariant,
                       height: 1.5,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Interactive OpenStreetMap Location Section
+                  const Text(
+                    'Location & Map (OpenStreetMap)',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.onSurface,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    height: 180,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: AppColors.outlineVariant),
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: FlutterMap(
+                        options: MapOptions(
+                          initialCenter: clinicLocation,
+                          initialZoom: 15.0,
+                        ),
+                        children: [
+                          TileLayer(
+                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+                            userAgentPackageName: 'com.example.wellqueueuser',
+                          ),
+                          MarkerLayer(
+                            markers: [
+                              Marker(
+                                point: clinicLocation,
+                                width: 50,
+                                height: 50,
+                                child: Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: const BoxDecoration(
+                                    color: AppColors.primary,
+                                    shape: BoxShape.circle,
+                                  ),
+                                  child: const Icon(
+                                    Icons.local_hospital_rounded,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                   const SizedBox(height: 24),
