@@ -73,7 +73,7 @@ class _SignInScreenState extends State<SignInScreen> {
                         borderRadius: BorderRadius.circular(20),
                         boxShadow: [
                           BoxShadow(
-                            color: AppColors.primary.withOpacity(0.25),
+                            color: AppColors.primary.withValues(alpha: 0.25),
                             blurRadius: 16,
                             offset: const Offset(0, 8),
                           ),
@@ -108,14 +108,14 @@ class _SignInScreenState extends State<SignInScreen> {
                     Container(
                       padding: const EdgeInsets.all(24),
                       decoration: BoxDecoration(
-                        color: AppColors.surfaceContainerLowest.withOpacity(0.9),
+                        color: AppColors.surfaceContainerLowest.withValues(alpha: 0.9),
                         borderRadius: BorderRadius.circular(24),
                         border: Border.all(
-                          color: AppColors.surfaceContainerHighest.withOpacity(0.8),
+                          color: AppColors.surfaceContainerHighest.withValues(alpha: 0.8),
                         ),
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.04),
+                            color: Colors.black.withValues(alpha: 0.04),
                             blurRadius: 20,
                             offset: const Offset(0, 8),
                           ),
