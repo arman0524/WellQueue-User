@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../core/theme/app_colors.dart';
 import '../auth/sign_in_screen.dart';
+import 'personal_info_screen.dart';
+import 'medical_history_screen.dart';
+import 'saved_clinics_screen.dart';
 
 class ProfileScreen extends StatelessWidget {
   const ProfileScreen({super.key});
@@ -117,17 +120,32 @@ class ProfileScreen extends StatelessWidget {
                         _SettingsItem(
                           icon: Icons.person_outline_rounded,
                           title: 'Personal Information',
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const PersonalInfoScreen()),
+                            );
+                          },
                         ),
                         _SettingsItem(
                           icon: Icons.history_rounded,
                           title: 'Medical History',
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const MedicalHistoryScreen()),
+                            );
+                          },
                         ),
                         _SettingsItem(
                           icon: Icons.bookmark_border_rounded,
                           title: 'Saved Clinics',
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(builder: (context) => const SavedClinicsScreen()),
+                            );
+                          },
                           isLast: true,
                         ),
                       ],
