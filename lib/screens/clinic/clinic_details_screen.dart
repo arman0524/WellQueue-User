@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:latlong2/latlong.dart';
@@ -38,14 +40,27 @@ class ClinicDetailsScreen extends StatelessWidget {
               background: Stack(
                 fit: StackFit.expand,
                 children: [
-                  Container(
-                    color: AppColors.primaryContainer,
-                    child: const Center(
-                      child: Icon(
-                        Icons.local_hospital_rounded,
-                        size: 80,
-                        color: Colors.white,
+                  Hero(
+                    tag: 'clinic-image-${clinic['id']}',
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: AppColors.primaryContainer,
+                        image: clinic['image'] != null
+                            ? DecorationImage(
+                                image: NetworkImage(clinic['image']),
+                                fit: BoxFit.cover,
+                              )
+                            : null,
                       ),
+                      child: clinic['image'] == null
+                          ? const Center(
+                              child: Icon(
+                                Icons.local_hospital_rounded,
+                                size: 80,
+                                color: Colors.white,
+                              ),
+                            )
+                          : null,
                     ),
                   ),
                   Container(
@@ -179,9 +194,163 @@ class ClinicDetailsScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 24),
 
+                  // Virtual Queue & Action Card
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: AppColors.surfaceContainerLowest,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.04),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        const Text(
+                          'Join Virtual Queue',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.onSurface,
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: const [
+                            Text(
+                              'Current Wait Time',
+                              style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant),
+                            ),
+                            Text(
+                              '~25 mins',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.secondary,
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: const LinearProgressIndicator(
+                            value: 0.35,
+                            minHeight: 8,
+                            backgroundColor: AppColors.surfaceContainer,
+                            color: AppColors.secondary,
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          height: 50,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Successfully joined the virtual queue! Ticket #WQ-42'),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.groups_rounded),
+                            label: const Text(
+                              'Join Virtual Queue Now',
+                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 10),
+                        SizedBox(
+                          height: 50,
+                          child: OutlinedButton.icon(
+                            onPressed: () async {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text('Calling for the appointment...'),
+                                  duration: Duration(seconds: 2),
+                                ),
+                              );
+
+                              try {
+                                // TODO: Replace with your actual Make.com / Zapier / custom webhook URL
+                                const String webhookUrl = 'https://hook.us1.make.com/your-webhook-id';
+
+                                final response = await http.post(
+                                  Uri.parse(webhookUrl),
+                                  headers: {'Content-Type': 'application/json'},
+                                  body: jsonEncode({
+                                    'clinic_name': clinic['name'] ?? 'Unknown Clinic',
+                                    'action': 'book_appointment',
+                                    'timestamp': DateTime.now().toIso8601String(),
+                                  }),
+                                );
+
+                                if (context.mounted) {
+                                  if (response.statusCode == 200 || response.statusCode == 201) {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('AI Agent is calling you to complete booking!'),
+                                        backgroundColor: Colors.green,
+                                      ),
+                                    );
+                                  } else {
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      SnackBar(
+                                        content: Text('Failed to trigger AI agent: ${response.statusCode}'),
+                                        backgroundColor: Colors.red,
+                                      ),
+                                    );
+                                  }
+                                }
+                              } catch (e) {
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text('Error: $e'),
+                                      backgroundColor: Colors.red,
+                                    ),
+                                  );
+                                }
+                              }
+                            },
+                            icon: const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
+                            label: const Text(
+                              'Book Appointment',
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: AppColors.primary,
+                              ),
+                            ),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.primary),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(14),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+
                   // Interactive OpenStreetMap Location Section
                   const Text(
-                    'Location & Map (OpenStreetMap)',
+                    'Location & Map',
                     style: TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -269,117 +438,6 @@ class ClinicDetailsScreen extends StatelessWidget {
                     'General Physician',
                     'Short Wait: ~15m',
                     Icons.timer_outlined,
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Virtual Queue & Action Card
-                  Container(
-                    padding: const EdgeInsets.all(20),
-                    decoration: BoxDecoration(
-                      color: AppColors.surfaceContainerLowest,
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: AppColors.outlineVariant.withValues(alpha: 0.5)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withValues(alpha: 0.04),
-                          blurRadius: 16,
-                          offset: const Offset(0, 6),
-                        ),
-                      ],
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        const Text(
-                          'Join Virtual Queue',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.onSurface,
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: const [
-                            Text(
-                              'Current Wait Time',
-                              style: TextStyle(fontSize: 13, color: AppColors.onSurfaceVariant),
-                            ),
-                            Text(
-                              '~25 mins',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.secondary,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(8),
-                          child: const LinearProgressIndicator(
-                            value: 0.35,
-                            minHeight: 8,
-                            backgroundColor: AppColors.surfaceContainer,
-                            color: AppColors.secondary,
-                          ),
-                        ),
-                        const SizedBox(height: 20),
-                        SizedBox(
-                          height: 50,
-                          child: ElevatedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Successfully joined the virtual queue! Ticket #WQ-42'),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.groups_rounded),
-                            label: const Text(
-                              'Join Virtual Queue Now',
-                              style: TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        SizedBox(
-                          height: 50,
-                          child: OutlinedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Appointment booking slot selected.'),
-                                ),
-                              );
-                            },
-                            icon: const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
-                            label: const Text(
-                              'Book Appointment',
-                              style: TextStyle(
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.primary,
-                              ),
-                            ),
-                            style: OutlinedButton.styleFrom(
-                              side: const BorderSide(color: AppColors.primary),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(14),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
                 ],
               ),

@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_map/flutter_map.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
+import 'package:animate_do/animate_do.dart';
 import '../../core/theme/app_colors.dart';
 import '../clinic/clinic_details_screen.dart';
 import '../queue/my_queues_screen.dart';
+import '../profile/profile_screen.dart';
 
 class FindClinicsScreen extends StatefulWidget {
   const FindClinicsScreen({super.key});
@@ -147,7 +149,7 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
         children: [
           _buildHomeScreen(context),
           const MyQueuesScreen(),
-          _buildProfileTab(context),
+          const ProfileScreen(),
         ],
       ),
       bottomNavigationBar: Container(
@@ -353,19 +355,24 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
                     child: Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Row(
-                          children: const [
-                            Icon(Icons.map_rounded, color: AppColors.primary, size: 20),
-                            SizedBox(width: 8),
-                            Text(
-                              'Live Nearby Map (OpenStreetMap)',
-                              style: TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                color: AppColors.onSurface,
+                        Expanded(
+                          child: Row(
+                            children: const [
+                              Icon(Icons.map_rounded, color: AppColors.primary, size: 20),
+                              SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  'Live Nearby Map',
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.bold,
+                                    color: AppColors.onSurface,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
                               ),
-                            ),
-                          ],
+                            ],
+                          ),
                         ),
                         InkWell(
                           onTap: _requestLocationPermissionAndFetch,
@@ -579,7 +586,11 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
             const SizedBox(height: 14),
 
             // Nearby Clinics Cards List
-            ...filteredClinics.map((clinic) => _buildClinicCard(context, clinic)),
+            ...filteredClinics.asMap().entries.map((entry) => FadeInUp(
+              delay: Duration(milliseconds: 100 * entry.key),
+              duration: const Duration(milliseconds: 500),
+              child: _buildClinicCard(context, entry.value),
+            )),
           ],
         ),
       ),
@@ -615,17 +626,28 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
           padding: const EdgeInsets.all(14),
           child: Row(
             children: [
-              Container(
-                width: 82,
-                height: 82,
-                decoration: BoxDecoration(
-                  color: AppColors.surfaceContainerHigh,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                child: const Icon(
-                  Icons.local_hospital_rounded,
-                  color: AppColors.primary,
-                  size: 38,
+              Hero(
+                tag: 'clinic-image-${clinic['id']}',
+                child: Container(
+                  width: 82,
+                  height: 82,
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceContainerHigh,
+                    borderRadius: BorderRadius.circular(14),
+                    image: clinic['image'] != null
+                        ? DecorationImage(
+                            image: NetworkImage(clinic['image']),
+                            fit: BoxFit.cover,
+                          )
+                        : null,
+                  ),
+                  child: clinic['image'] == null
+                      ? const Icon(
+                          Icons.local_hospital_rounded,
+                          color: AppColors.primary,
+                          size: 38,
+                        )
+                      : null,
                 ),
               ),
               const SizedBox(width: 14),
@@ -807,56 +829,4 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
     );
   }
 
-  Widget _buildProfileTab(BuildContext context) {
-    return SafeArea(
-      child: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          children: [
-            const CircleAvatar(
-              radius: 40,
-              backgroundColor: AppColors.primary,
-              child: Text(
-                'AR',
-                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.white),
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Alex Rivera',
-              style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-            ),
-            const Text(
-              'Health ID: #WQ-9920-X',
-              style: TextStyle(color: AppColors.onSurfaceVariant, fontSize: 13),
-            ),
-            const SizedBox(height: 24),
-            ListTile(
-              leading: const Icon(Icons.history_rounded, color: AppColors.primary),
-              title: const Text('Medical History'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.bookmark_border_rounded, color: AppColors.primary),
-              title: const Text('Saved Clinics'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.settings_outlined, color: AppColors.primary),
-              title: const Text('Settings'),
-              trailing: const Icon(Icons.chevron_right_rounded),
-              onTap: () {},
-            ),
-            ListTile(
-              leading: const Icon(Icons.logout_rounded, color: AppColors.error),
-              title: const Text('Logout', style: TextStyle(color: AppColors.error)),
-              onTap: () {},
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
