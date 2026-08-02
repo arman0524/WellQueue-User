@@ -1,9 +1,6 @@
-import 'dart:convert';
-import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
-import 'package:flutter_map/flutter_map.dart';
-import 'package:latlong2/latlong.dart';
 import '../../core/theme/app_colors.dart';
+import '../appointment/book_appointment_screen.dart';
 
 class ClinicDetailsScreen extends StatelessWidget {
   final Map<String, dynamic> clinic;
@@ -12,8 +9,6 @@ class ClinicDetailsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final LatLng clinicLocation = clinic['location'] ?? const LatLng(40.7350, -73.9400);
-
     return Scaffold(
       body: CustomScrollView(
         slivers: [
@@ -276,55 +271,13 @@ class ClinicDetailsScreen extends StatelessWidget {
                         SizedBox(
                           height: 50,
                           child: OutlinedButton.icon(
-                            onPressed: () async {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Calling for the appointment...'),
-                                  duration: Duration(seconds: 2),
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => BookAppointmentScreen(clinic: clinic),
                                 ),
                               );
-
-                              try {
-                                // TODO: Replace with your actual Make.com / Zapier / custom webhook URL
-                                const String webhookUrl = 'https://hook.us1.make.com/your-webhook-id';
-
-                                final response = await http.post(
-                                  Uri.parse(webhookUrl),
-                                  headers: {'Content-Type': 'application/json'},
-                                  body: jsonEncode({
-                                    'clinic_name': clinic['name'] ?? 'Unknown Clinic',
-                                    'action': 'book_appointment',
-                                    'timestamp': DateTime.now().toIso8601String(),
-                                  }),
-                                );
-
-                                if (context.mounted) {
-                                  if (response.statusCode == 200 || response.statusCode == 201) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('AI Agent is calling you to complete booking!'),
-                                        backgroundColor: Colors.green,
-                                      ),
-                                    );
-                                  } else {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(
-                                        content: Text('Failed to trigger AI agent: ${response.statusCode}'),
-                                        backgroundColor: Colors.red,
-                                      ),
-                                    );
-                                  }
-                                }
-                              } catch (e) {
-                                if (context.mounted) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text('Error: $e'),
-                                      backgroundColor: Colors.red,
-                                    ),
-                                  );
-                                }
-                              }
                             },
                             icon: const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
                             label: const Text(
@@ -344,61 +297,6 @@ class ClinicDetailsScreen extends StatelessWidget {
                           ),
                         ),
                       ],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-
-                  // Interactive OpenStreetMap Location Section
-                  const Text(
-                    'Location & Map',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.onSurface,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    height: 180,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(color: AppColors.outlineVariant),
-                    ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: FlutterMap(
-                        options: MapOptions(
-                          initialCenter: clinicLocation,
-                          initialZoom: 15.0,
-                        ),
-                        children: [
-                          TileLayer(
-                            urlTemplate: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-                            userAgentPackageName: 'com.example.wellqueueuser',
-                          ),
-                          MarkerLayer(
-                            markers: [
-                              Marker(
-                                point: clinicLocation,
-                                width: 50,
-                                height: 50,
-                                child: Container(
-                                  padding: const EdgeInsets.all(8),
-                                  decoration: const BoxDecoration(
-                                    color: AppColors.primary,
-                                    shape: BoxShape.circle,
-                                  ),
-                                  child: const Icon(
-                                    Icons.local_hospital_rounded,
-                                    color: Colors.white,
-                                    size: 24,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
                     ),
                   ),
                   const SizedBox(height: 24),

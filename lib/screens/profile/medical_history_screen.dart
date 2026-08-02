@@ -1,9 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/medical_record.dart';
 
-class MedicalHistoryScreen extends StatelessWidget {
+class MedicalHistoryScreen extends StatefulWidget {
   const MedicalHistoryScreen({super.key});
+
+  @override
+  State<MedicalHistoryScreen> createState() => _MedicalHistoryScreenState();
+}
+
+class _MedicalHistoryScreenState extends State<MedicalHistoryScreen> {
+  List<MedicalRecord> _records = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchMedicalHistory();
+  }
+
+  Future<void> _fetchMedicalHistory() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      final data = await Supabase.instance.client
+          .from('medical_history')
+          .select()
+          .eq('user_id', user.id)
+          .order('date_recorded', ascending: false);
+
+      if (mounted) {
+        setState(() {
+          _records = (data as List).map((json) => MedicalRecord.fromJson(json)).toList();
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error loading medical history: $e')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -34,69 +79,64 @@ class MedicalHistoryScreen extends StatelessWidget {
           ),
         ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            FadeInUp(
-              duration: const Duration(milliseconds: 400),
-              child: _buildVitalsSection(),
-            ),
-            const SizedBox(height: 24),
-            
-            FadeInUp(
-              duration: const Duration(milliseconds: 500),
-              child: _buildSectionTitle('Known Allergies'),
-            ),
-            const SizedBox(height: 12),
-            FadeInUp(
-              duration: const Duration(milliseconds: 600),
-              child: _buildRecordCard(
-                title: 'Penicillin',
-                subtitle: 'Severe allergic reaction (Hives, Swelling)',
-                date: 'Diagnosed: 2015',
-                icon: Icons.warning_amber_rounded,
-                iconColor: AppColors.error,
+      body: _isLoading 
+          ? const Center(child: CircularProgressIndicator(color: AppColors.primary))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  FadeInUp(
+                    duration: const Duration(milliseconds: 400),
+                    child: _buildVitalsSection(),
+                  ),
+                  const SizedBox(height: 24),
+                  
+                  if (_records.isEmpty)
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 500),
+                      child: const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 32),
+                          child: Text(
+                            'No medical history recorded yet.',
+                            style: TextStyle(
+                              color: AppColors.onSurfaceVariant,
+                              fontSize: 16,
+                            ),
+                          ),
+                        ),
+                      ),
+                    )
+                  else ...[
+                    FadeInUp(
+                      duration: const Duration(milliseconds: 500),
+                      child: _buildSectionTitle('Medical Records'),
+                    ),
+                    const SizedBox(height: 12),
+                    ..._records.asMap().entries.map((entry) {
+                      final index = entry.key;
+                      final record = entry.value;
+                      return FadeInUp(
+                        duration: Duration(milliseconds: 600 + (index * 100)),
+                        child: Padding(
+                          padding: const EdgeInsets.only(bottom: 16.0),
+                          child: _buildRecordCard(
+                            title: record.conditionName,
+                            subtitle: record.notes ?? 'No additional notes',
+                            date: record.dateRecorded != null 
+                                ? 'Recorded: ${record.dateRecorded!.toIso8601String().split('T')[0]}'
+                                : 'No date',
+                            icon: Icons.local_hospital_rounded,
+                            iconColor: AppColors.primary,
+                          ),
+                        ),
+                      );
+                    }),
+                  ],
+                ],
               ),
             ),
-            const SizedBox(height: 24),
-
-            FadeInUp(
-              duration: const Duration(milliseconds: 700),
-              child: _buildSectionTitle('Current Medications'),
-            ),
-            const SizedBox(height: 12),
-            FadeInUp(
-              duration: const Duration(milliseconds: 800),
-              child: _buildRecordCard(
-                title: 'Lisinopril 10mg',
-                subtitle: 'Take 1 tablet daily for blood pressure',
-                date: 'Prescribed: Oct 2023',
-                icon: Icons.medication_rounded,
-                iconColor: AppColors.secondary,
-              ),
-            ),
-            const SizedBox(height: 24),
-
-            FadeInUp(
-              duration: const Duration(milliseconds: 900),
-              child: _buildSectionTitle('Past Conditions & Surgeries'),
-            ),
-            const SizedBox(height: 12),
-            FadeInUp(
-              duration: const Duration(milliseconds: 1000),
-              child: _buildRecordCard(
-                title: 'Appendectomy',
-                subtitle: 'Surgical removal of appendix',
-                date: 'Procedure Date: Mar 2018',
-                icon: Icons.local_hospital_rounded,
-                iconColor: AppColors.primary,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 

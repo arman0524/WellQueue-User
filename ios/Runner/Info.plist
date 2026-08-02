@@ -6,6 +6,8 @@
 		<string>This app needs access to location when open to show nearby clinics on the map.</string>
 		<key>NSLocationAlwaysUsageDescription</key>
 		<string>This app needs access to location when in the background.</string>
+		<key>NSFaceIDUsageDescription</key>
+		<string>This app needs access to Face ID for secure authentication.</string>
 		<key>CADisableMinimumFrameDurationOnPhone</key>
 		<true/>
 		<key>CFBundleDevelopmentRegion</key>

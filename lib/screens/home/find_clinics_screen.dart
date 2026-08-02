@@ -4,6 +4,7 @@ import 'package:geolocator/geolocator.dart';
 import 'package:latlong2/latlong.dart';
 import 'package:animate_do/animate_do.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/database_service.dart';
 import '../clinic/clinic_details_screen.dart';
 import '../queue/my_queues_screen.dart';
 import '../profile/profile_screen.dart';
@@ -22,60 +23,49 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
   bool _isLocating = true;
   String _locationStatusText = 'Locating...';
 
+  final DatabaseService _dbService = DatabaseService();
+  List<Map<String, dynamic>> _clinics = [];
+
   final MapController _mapController = MapController();
 
   // Default initial location (used while fetching or fallback)
   LatLng _userLocation = const LatLng(40.730610, -73.935242);
 
-  final List<Map<String, dynamic>> _clinics = [
-    {
-      'id': '1',
-      'name': 'City Health Urgent Care',
-      'category': 'Urgent Care',
-      'address': '124 Clinical Row, Medical District, NY 10012',
-      'isOpen': true,
-      'rating': 4.8,
-      'reviews': 120,
-      'distance': '0.8 km',
-      'waitTime': '15 min wait',
-      'hours': '08:00 AM - 09:00 PM',
-      'location': const LatLng(40.7350, -73.9400),
-      'image': 'https://images.unsplash.com/photo-1519494026892-80bbd2d6fd0d?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      'id': '2',
-      'name': 'Beacon Wellness Center',
-      'category': 'Pediatrics',
-      'address': '88 Health Blvd, NY 10015',
-      'isOpen': true,
-      'rating': 4.6,
-      'reviews': 95,
-      'distance': '1.4 km',
-      'waitTime': '5 min wait',
-      'hours': '08:30 AM - 07:00 PM',
-      'location': const LatLng(40.7250, -73.9280),
-      'image': 'https://images.unsplash.com/photo-1586773860418-d37222d8fce3?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      'id': '3',
-      'name': 'Family First Medical',
-      'category': 'General Care',
-      'address': '45 Avenue B, NY 10009',
-      'isOpen': false,
-      'rating': 4.9,
-      'reviews': 210,
-      'distance': '2.1 km',
-      'waitTime': 'Opens 8:00 AM',
-      'hours': '08:00 AM - 05:00 PM',
-      'location': const LatLng(40.7180, -73.9520),
-      'image': 'https://images.unsplash.com/photo-1629909613654-28e377c37b09?auto=format&fit=crop&w=600&q=80',
-    },
-  ];
-
   @override
   void initState() {
     super.initState();
     _requestLocationPermissionAndFetch();
+    _fetchClinics();
+  }
+
+  Future<void> _fetchClinics() async {
+    final clinicsModels = await _dbService.getClinics();
+    final mappedClinics = clinicsModels.map((c) => {
+      'id': c.id,
+      'name': c.name,
+      'category': c.category,
+      'address': c.address,
+      'isOpen': c.isOpen,
+      'rating': c.rating,
+      'reviews': c.reviews,
+      'distance': '1.2 km', // Mock distance
+      'waitTime': c.waitTime,
+      'hours': c.hours,
+      'location': LatLng(c.latitude, c.longitude),
+      'image': c.imageUrl,
+    }).toList();
+
+    if (mounted) {
+      setState(() {
+        _clinics = mappedClinics;
+      });
+    }
+
+    // Optional: listen to stream for real-time updates
+    _dbService.streamClinics().listen((event) {
+      if (!mounted) return;
+      _fetchClinics(); // re-fetch or map event
+    });
   }
 
   Future<void> _requestLocationPermissionAndFetch() async {

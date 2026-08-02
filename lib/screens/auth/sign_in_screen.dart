@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/auth_service.dart';
 import 'sign_up_screen.dart';
 import '../home/find_clinics_screen.dart';
 
@@ -18,6 +20,8 @@ class _SignInScreenState extends State<SignInScreen> {
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isLoading = false;
+  
+  final AuthService _authService = AuthService();
 
   @override
   void dispose() {
@@ -31,17 +35,29 @@ class _SignInScreenState extends State<SignInScreen> {
 
     setState(() => _isLoading = true);
 
-    // Simulate authentication delay
-    await Future.delayed(const Duration(seconds: 1));
-
-    if (!mounted) return;
-
-    setState(() => _isLoading = false);
-
-    // Navigate to Home / Find Clinics Screen
-    Navigator.of(context).pushReplacement(
-      MaterialPageRoute(builder: (context) => const FindClinicsScreen()),
-    );
+    try {
+      await Supabase.instance.client.auth.signInWithPassword(
+        email: _emailController.text,
+        password: _passwordController.text,
+      );
+      if (!mounted) return;
+      
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (context) => const FindClinicsScreen()),
+      );
+    } on AuthException catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(error.message)),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unexpected error occurred')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -327,12 +343,18 @@ class _SignInScreenState extends State<SignInScreen> {
                               children: [
                                 Expanded(
                                   child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Google Auth simulation triggered'),
-                                        ),
-                                      );
+                                    onPressed: () async {
+                                      final response = await _authService.signInWithGoogle();
+                                      if (!context.mounted) return;
+                                      if (response != null) {
+                                        Navigator.of(context).pushReplacement(
+                                          MaterialPageRoute(builder: (context) => const FindClinicsScreen()),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Google Sign-In failed or canceled')),
+                                        );
+                                      }
                                     },
                                     icon: const Icon(
                                       Icons.g_mobiledata_rounded,
@@ -353,12 +375,18 @@ class _SignInScreenState extends State<SignInScreen> {
                                 const SizedBox(width: 12),
                                 Expanded(
                                   child: OutlinedButton.icon(
-                                    onPressed: () {
-                                      ScaffoldMessenger.of(context).showSnackBar(
-                                        const SnackBar(
-                                          content: Text('Biometric auth simulation triggered'),
-                                        ),
-                                      );
+                                    onPressed: () async {
+                                      final success = await _authService.authenticateWithBiometrics();
+                                      if (!context.mounted) return;
+                                      if (success) {
+                                        Navigator.of(context).pushReplacement(
+                                          MaterialPageRoute(builder: (context) => const FindClinicsScreen()),
+                                        );
+                                      } else {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          const SnackBar(content: Text('Biometric auth failed')),
+                                        );
+                                      }
                                     },
                                     icon: const Icon(
                                       Icons.fingerprint_rounded,

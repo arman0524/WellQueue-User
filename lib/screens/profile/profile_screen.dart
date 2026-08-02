@@ -1,16 +1,80 @@
 import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
+import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
+import '../../models/profile.dart';
 import '../auth/sign_in_screen.dart';
 import 'personal_info_screen.dart';
 import 'medical_history_screen.dart';
 import 'saved_clinics_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
 
   @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  Profile? _profile;
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    try {
+      final user = Supabase.instance.client.auth.currentUser;
+      if (user == null) return;
+
+      final data = await Supabase.instance.client
+          .from('profiles')
+          .select()
+          .eq('id', user.id)
+          .single();
+
+      if (mounted) {
+        setState(() {
+          _profile = Profile.fromJson(data);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  String _getInitials(String? name) {
+    if (name == null || name.isEmpty) return '??';
+    final parts = name.split(' ');
+    if (parts.length > 1) {
+      return '${parts[0][0]}${parts[1][0]}'.toUpperCase();
+    }
+    return name.substring(0, name.length >= 2 ? 2 : 1).toUpperCase();
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Scaffold(
+        backgroundColor: AppColors.background,
+        body: Center(
+          child: CircularProgressIndicator(color: AppColors.primary),
+        ),
+      );
+    }
+
+    final displayName = _profile?.fullName ?? 'Anonymous User';
+    final healthId = _profile?.healthId ?? 'No Health ID';
+    final initials = _getInitials(_profile?.fullName);
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SingleChildScrollView(
@@ -48,23 +112,28 @@ class ProfileScreen extends StatelessWidget {
                         shape: BoxShape.circle,
                         color: Colors.white.withValues(alpha: 0.2),
                       ),
-                      child: const CircleAvatar(
+                      child: CircleAvatar(
                         radius: 50,
                         backgroundColor: Colors.white,
-                        child: Text(
-                          'AR',
-                          style: TextStyle(
-                            fontSize: 32,
-                            fontWeight: FontWeight.bold,
-                            color: AppColors.primary,
-                          ),
-                        ),
+                        backgroundImage: _profile?.avatarUrl != null
+                            ? NetworkImage(_profile!.avatarUrl!)
+                            : null,
+                        child: _profile?.avatarUrl == null
+                            ? Text(
+                                initials,
+                                style: const TextStyle(
+                                  fontSize: 32,
+                                  fontWeight: FontWeight.bold,
+                                  color: AppColors.primary,
+                                ),
+                              )
+                            : null,
                       ),
                     ),
                     const SizedBox(height: 16),
-                    const Text(
-                      'Alex Rivera',
-                      style: TextStyle(
+                    Text(
+                      displayName,
+                      style: const TextStyle(
                         fontSize: 24,
                         fontWeight: FontWeight.bold,
                         color: AppColors.onPrimary,
@@ -77,9 +146,9 @@ class ProfileScreen extends StatelessWidget {
                         color: Colors.white.withValues(alpha: 0.2),
                         borderRadius: BorderRadius.circular(20),
                       ),
-                      child: const Text(
-                        'Health ID: #WQ-9920-X',
-                        style: TextStyle(
+                      child: Text(
+                        'Health ID: $healthId',
+                        style: const TextStyle(
                           color: AppColors.onPrimary,
                           fontSize: 13,
                           fontWeight: FontWeight.w600,
@@ -120,11 +189,13 @@ class ProfileScreen extends StatelessWidget {
                         _SettingsItem(
                           icon: Icons.person_outline_rounded,
                           title: 'Personal Information',
-                          onTap: () {
-                            Navigator.push(
+                          onTap: () async {
+                            await Navigator.push(
                               context,
                               MaterialPageRoute(builder: (context) => const PersonalInfoScreen()),
                             );
+                            // Refresh profile when returning
+                            _fetchProfile();
                           },
                         ),
                         _SettingsItem(
@@ -199,7 +270,9 @@ class ProfileScreen extends StatelessWidget {
                       width: double.infinity,
                       height: 54,
                       child: OutlinedButton.icon(
-                        onPressed: () {
+                        onPressed: () async {
+                          await Supabase.instance.client.auth.signOut();
+                          if (!context.mounted) return;
                           Navigator.of(context).pushAndRemoveUntil(
                             MaterialPageRoute(builder: (context) => const SignInScreen()),
                             (route) => false,
