@@ -430,3 +430,109 @@ class ClinicDetailsScreen extends StatelessWidget {
     );
   }
 }
+
+class _BookAppointmentButton extends StatefulWidget {
+  final Map<String, dynamic> clinic;
+  const _BookAppointmentButton({required this.clinic});
+
+  @override
+  State<_BookAppointmentButton> createState() => _BookAppointmentButtonState();
+}
+
+class _BookAppointmentButtonState extends State<_BookAppointmentButton> {
+  bool _isLoading = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 50,
+      child: OutlinedButton.icon(
+        onPressed: _isLoading
+            ? null
+            : () async {
+                setState(() => _isLoading = true);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Calling for the appointment...'),
+                    duration: Duration(seconds: 2),
+                  ),
+                );
+
+                try {
+                  // Make.com webhook URL provided by the user
+                  const String webhookUrl = 'https://hook.eu1.make.com/egtkqbewvypifulq5v20ult51uz7mfi0';
+                  // const String webhookUrl = 'https://kuchbhi.app.n8n.cloud/webhook-test/cb7d7971-c81f-4472-8520-d8c64e37263d';
+
+                  final response = await http.post(
+                    Uri.parse(webhookUrl),
+                    headers: {'Content-Type': 'application/json'},
+                    body: jsonEncode({
+                      'clinic_name': widget.clinic['name'] ?? 'Unknown Clinic',
+                      'action': 'book_appointment',
+                      'timestamp': DateTime.now().toIso8601String(),
+                      // Hardcoded User Data for AI Agent testing
+                      'user_name': 'Test User',
+                      'user_phone': '+919607532361',
+                      'user_email': 'test@example.com',
+                      // Retell AI outbound caller number (Twilio SIP)
+                      'from_number': '+18313195803',
+                    }),
+                  );
+
+                  if (context.mounted) {
+                    if (response.statusCode == 200 || response.statusCode == 201 || response.statusCode == 202) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('AI Agent is calling you to complete booking!'),
+                          backgroundColor: Colors.green,
+                        ),
+                      );
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text('Failed to trigger AI agent: ${response.statusCode}'),
+                          backgroundColor: Colors.red,
+                        ),
+                      );
+                    }
+                  }
+                } catch (e) {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text('Error: $e'),
+                        backgroundColor: Colors.red,
+                      ),
+                    );
+                  }
+                } finally {
+                  if (context.mounted) {
+                    setState(() => _isLoading = false);
+                  }
+                }
+              },
+        icon: _isLoading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+              )
+            : const Icon(Icons.calendar_month_rounded, color: AppColors.primary),
+        label: Text(
+          _isLoading ? 'Connecting Agent...' : 'Book Appointment',
+          style: const TextStyle(
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
+            color: AppColors.primary,
+          ),
+        ),
+        style: OutlinedButton.styleFrom(
+          side: const BorderSide(color: AppColors.primary),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+      ),
+    );
+  }
+}
