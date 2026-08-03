@@ -7,6 +7,7 @@ import '../../core/theme/app_colors.dart';
 import '../../services/database_service.dart';
 import '../clinic/clinic_details_screen.dart';
 import '../queue/my_queues_screen.dart';
+import '../appointments/appointments_screen.dart';
 import '../profile/profile_screen.dart';
 
 class FindClinicsScreen extends StatefulWidget {
@@ -139,6 +140,7 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
         children: [
           _buildHomeScreen(context),
           const MyQueuesScreen(),
+          const AppointmentsScreen(),
           const ProfileScreen(),
         ],
       ),
@@ -159,7 +161,8 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
           children: [
             _buildNavItem(0, Icons.home_rounded, 'Find Clinics'),
             _buildNavItem(1, Icons.event_rounded, 'My Queues'),
-            _buildNavItem(2, Icons.person_rounded, 'Profile'),
+            _buildNavItem(2, Icons.calendar_month_rounded, 'Appointments'),
+            _buildNavItem(3, Icons.person_rounded, 'Profile'),
           ],
         ),
       ),
