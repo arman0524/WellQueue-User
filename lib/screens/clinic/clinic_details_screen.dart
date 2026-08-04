@@ -430,3 +430,4 @@ class ClinicDetailsScreen extends StatelessWidget {
     );
   }
 }
+

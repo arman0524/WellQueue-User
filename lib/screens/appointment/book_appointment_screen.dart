@@ -81,6 +81,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
     final success = await AIAgentService.triggerAIAgentCall(
       clinicName: widget.clinic['name'] ?? 'Unknown Clinic',
+      clinicId: widget.clinic['id'] ?? '',
       language: language,
     );
 
