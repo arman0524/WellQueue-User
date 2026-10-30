@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:animate_do/animate_do.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import '../../core/theme/app_colors.dart';
+import '../clinic/clinic_details_screen.dart';
 
 class SavedClinicsScreen extends StatefulWidget {
   const SavedClinicsScreen({super.key});
@@ -110,28 +111,59 @@ class _SavedClinicsScreenState extends State<SavedClinicsScreen> {
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(20),
-          onTap: () {},
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => ClinicDetailsScreen(clinic: {
+                  ...clinic,
+                  'image': clinic['image_url'],
+                }),
+              ),
+            );
+          },
           child: Padding(
             padding: const EdgeInsets.all(16.0),
             child: Row(
               children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: clinic['image_url'] != null
-                        ? Image.network(
-                            clinic['image_url'],
-                            width: 80,
-                            height: 80,
-                            fit: BoxFit.cover,
-                          )
-                        : Container(
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(16),
+                  child: (clinic['image_url'] != null && clinic['image_url'].toString().trim().isNotEmpty)
+                      ? Image.network(
+                          clinic['image_url'],
+                          width: 80,
+                          height: 80,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) => Container(
                             width: 80,
                             height: 80,
                             color: AppColors.primaryContainer,
-                            child: const Icon(Icons.local_hospital, color: AppColors.primary),
+                            child: const Icon(Icons.local_hospital_rounded, color: AppColors.primary, size: 36),
                           ),
-                  ),
-                  const SizedBox(width: 16),
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              width: 80,
+                              height: 80,
+                              color: AppColors.surfaceContainerHigh,
+                              child: const Center(
+                                child: SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(strokeWidth: 2, color: AppColors.primary),
+                                ),
+                              ),
+                            );
+                          },
+                        )
+                      : Container(
+                          width: 80,
+                          height: 80,
+                          color: AppColors.primaryContainer,
+                          child: const Icon(Icons.local_hospital_rounded, color: AppColors.primary, size: 36),
+                        ),
+                ),
+                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,

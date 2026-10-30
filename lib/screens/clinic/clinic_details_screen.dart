@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/queue_service.dart';
 import '../appointment/book_appointment_screen.dart';
 
 class ClinicDetailsScreen extends StatelessWidget {
@@ -40,10 +41,11 @@ class ClinicDetailsScreen extends StatelessWidget {
                     child: Container(
                       decoration: BoxDecoration(
                         color: AppColors.primaryContainer,
-                        image: clinic['image'] != null
+                        image: (clinic['image'] != null && clinic['image'].toString().trim().isNotEmpty)
                             ? DecorationImage(
                                 image: NetworkImage(clinic['image']),
                                 fit: BoxFit.cover,
+                                onError: (exception, stackTrace) {},
                               )
                             : null,
                       ),
@@ -247,12 +249,37 @@ class ClinicDetailsScreen extends StatelessWidget {
                         SizedBox(
                           height: 50,
                           child: ElevatedButton.icon(
-                            onPressed: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Successfully joined the virtual queue! Ticket #WQ-42'),
-                                ),
-                              );
+                            onPressed: () async {
+                              try {
+                                final entry = await QueueService.joinQueue(
+                                  clinicId: clinic['id'],
+                                );
+                                if (!context.mounted) return;
+                                final token = entry['token_number'] != null
+                                    ? '#WQ-${entry['token_number'].toString().padLeft(2, '0')}'
+                                    : '#WQ-01';
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Joined virtual queue for ${clinic['name']}! Ticket $token'),
+                                    backgroundColor: Colors.green,
+                                    action: SnackBarAction(
+                                      label: 'View Queue',
+                                      textColor: Colors.white,
+                                      onPressed: () {
+                                        Navigator.pop(context);
+                                      },
+                                    ),
+                                  ),
+                                );
+                              } catch (e) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text('Could not join queue: ${e.toString().replaceAll('Exception:', '').trim()}'),
+                                    backgroundColor: Colors.red,
+                                  ),
+                                );
+                              }
                             },
                             icon: const Icon(Icons.groups_rounded),
                             label: const Text(

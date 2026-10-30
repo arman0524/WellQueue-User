@@ -627,10 +627,11 @@ class _FindClinicsScreenState extends State<FindClinicsScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.surfaceContainerHigh,
                     borderRadius: BorderRadius.circular(14),
-                    image: clinic['image'] != null
+                    image: (clinic['image'] != null && clinic['image'].toString().trim().isNotEmpty)
                         ? DecorationImage(
                             image: NetworkImage(clinic['image']),
                             fit: BoxFit.cover,
+                            onError: (exception, stackTrace) {},
                           )
                         : null,
                   ),
